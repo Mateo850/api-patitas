@@ -1,1 +1,1 @@
-web: uvicorn __init__:app --host 0.0.0.0 --port $PORT
+web: gunicorn __init__:app --band 0.0.0.0:$PORT
