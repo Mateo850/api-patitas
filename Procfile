@@ -1,0 +1,1 @@
+web: gunicorn __init__:app --host 0.0.0.0 --port $PORT
