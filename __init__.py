@@ -81,6 +81,7 @@ def registro_animal():
         nombre = data['nombre']
         especie = data['especie']
         sexo = data['sexo']
+        historial_medico_id = data['historial_medico_id']
         estado_salud = data['estado_salud']
         raza = data['raza']
         fecha_ingreso = data['fecha_ingreso']
@@ -92,6 +93,7 @@ def registro_animal():
             'especie': especie,
             'sexo': sexo,
             'raza':raza,
+            'historial_medico_id':historial_medico_id,
             'estado_salud': estado_salud,
             'fecha_ingreso': fecha_ingreso
         })
@@ -125,6 +127,144 @@ def registro_refugio():
         print("ERROR EN LA EJECUCIÓN DE LA API:", e)
         return jsonify({"error": str(e)}), 500
     
+
+#registrar historial medico
+@app.route('/registro-historial-medico', methods=['POST'])
+def registro_historial_medico():
+    try:
+        data = request.get_json()
+        id_animal= data['id_animal']
+        id_refugio =data['id_refugio']
+        castrado = data['castrado']
+        fecha_revision = data['fecha_revision']
+        peso = data['peso']
+        enfermedades = data['enfermedades']
+        tratamiento = data['tratamiento']
+       
+
+        #crear historial medico
+ 
+        ref = db.reference('historialMedico')
+        nuevo_hmedico = ref.push()
+        nuevo_hmedico.set({
+            'castrado': castrado,
+            'fecha_revision': fecha_revision,
+            'peso': peso,
+            'enfermedades':enfermedades,
+            'tratamiento': tratamiento,
+            
+        })
+
+        #actualizar el id del historial en el animal correspondiente
+
+        historial_medico_id = nuevo_hmedico.key
+        animal_ref = db.reference('animales/'+id_refugio+'/'+id_animal)
+
+        animal_ref.update({'historial_medico_id':historial_medico_id})
+
+
+ 
+        return jsonify({"message": "datos medicos registrado correctamente"}), 200
+    except Exception as e:
+        print("ERROR EN LA EJECUCIÓN DE LA API historial medico:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+#actualizar historial medico
+@app.route('/update-historial-medico', methods=['POST'])
+def update_historial_medico():
+    try:
+        data = request.get_json()
+        id_historial= data['id_historial']
+        castrado = data['castrado']
+        fecha_revision = data['fecha_revision']
+        peso = data['peso']
+        enfermedades = data['enfermedades']
+        tratamiento = data['tratamiento']
+     
+
+        #actualizar historial medico
+ 
+        ref = db.reference('historialMedico/'+id_historial)
+        ref.update({
+            'castrado': castrado,
+            'fecha_revision': fecha_revision,
+            'peso': peso,
+            'enfermedades':enfermedades,
+            'tratamiento': tratamiento,
+          
+        })
+
+ 
+        return jsonify({"message": "datos medicos registrado correctamente"}), 200
+    except Exception as e:
+        print("ERROR EN LA EJECUCIÓN DE LA API historial medico:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+
+#actualizar  animal
+@app.route('/update-animal', methods=['POST'])
+def update_animal():
+    try:
+        data = request.get_json()
+        id_refugio= data['id_refugio']
+        id_animal= data['id_animal']
+        
+        nombre = data['nombre']
+        especie = data['especie']
+        sexo = data['sexo']
+        historial_medico_id = data['historial_medico_id']
+        estado_salud = data['estado_salud']
+        raza = data['raza']
+        fecha_ingreso = data['fecha_ingreso']
+ 
+        ref = db.reference('animales/'+id_refugio+'/'+id_animal)
+        ref.update({
+            'nombre': nombre,
+            'especie': especie,
+            'sexo': sexo,
+            'raza':raza,
+            'historial_medico_id':historial_medico_id,
+            'estado_salud': estado_salud,
+            'fecha_ingreso': fecha_ingreso
+        })
+        
+ 
+        return jsonify({"message": "Animal actualizado correctamente"}), 200
+    except Exception as e:
+        print("ERROR EN LA EJECUCIÓN DE LA API:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+#actualizar  animal
+@app.route('/delete-animal', methods=['POST'])
+def delete_animal():
+    try:
+        data = request.get_json()
+        id_refugio= data['id_refugio']
+        id_animal= data['id_animal']
+        historial_medico_id = data['historial_medico_id']
+        
+ 
+        ref = db.reference('animales/'+id_refugio+'/'+id_animal)
+        ref.delete()
+
+        #eliminar historial medico asociado
+        if historial_medico_id != "":
+            historial_ref = db.reference('historialMedico/'+historial_medico_id)
+            historial_ref.delete()
+        
+ 
+        return jsonify({"message": "Animal eliminado correctamente"}), 200
+    except Exception as e:
+        print("ERROR EN LA EJECUCIÓN DE LA API:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+    
+
+
 #obtener datos animales
 @app.route('/animales/<string:id_refugio>', methods=['GET'])
 def obtener_animales(id_refugio):
@@ -170,7 +310,59 @@ def obtener_usuario(id_user):
     except Exception as e:
         print("ERROR EN LA EJECUCIÓN DE LA API:", e)
         return jsonify({"error": str(e)}), 500
+    
+
+#obtener historial medico
+@app.route('/historial-medico/<string:id_historial>', methods=['GET'])
+def historial_medico(id_historial):
+    try:
+        ref = db.reference('historialMedico/'+id_historial)
+        data = ref.get()
+
+        if not data:
+            return jsonify({"error": "Historial médico no encontrado"}), 404
+
+ 
+        return jsonify(data), 200
+    except Exception as e:
+        print("ERROR EN LA EJECUCIÓN DE LA API obtencion historial medico:", e)
+        return jsonify({"error": str(e)}), 500
+
+#obtener lista animales con problemas de peso
+@app.route('/animales/<string:id_refugio>', methods=['GET'])
+def problemas_peso(id_refugio):
+    try:
+        ref = db.reference(f'animales/{id_refugio}')
+        data = ref.get()
+
+        if not data:
+            return jsonify({"animales_bajo_peso": []}), 200
+
+        animales_bajo_peso = []
+
+        
+        for id_animal, animal in data.items():
+            try:
+                peso = float(animal.get("peso", 0))
+            except:
+                peso = 0
+
+            
+            if peso < 8.0:  
+                animales_bajo_peso.append({
+                    "id": id_animal,
+                    "nombre": animal.get("nombre", ""),
+                    "especie": animal.get("especie", ""),
+                    "raza": animal.get("raza", ""),
+                    "peso": peso,
+                })
+
+        return jsonify({animales_bajo_peso}), 200
+    except Exception as e:
+        print("ERROR EN LA EJECUCIÓN DE LA API:", e)
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+
