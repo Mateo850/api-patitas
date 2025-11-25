@@ -164,7 +164,7 @@ def registro_historial_medico():
 
 
  
-        return jsonify({"message": "datos medicos registrado correctamente"}), 200
+        return jsonify({"message": "datos medicos registrado correctamente","id": historial_medico_id}), 200
     except Exception as e:
         print("ERROR EN LA EJECUCIÓN DE LA API historial medico:", e)
         return jsonify({"error": str(e)}), 500
@@ -365,4 +365,5 @@ def problemas_peso(id_refugio):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
